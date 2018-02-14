@@ -23,6 +23,19 @@ def methode_euler(t,X0, h):
         
     return X
 
+
+#METHODE RK2 - Runge Kutta
+def methode_RK(t,X0, h):
+    #CONDITION INITIALES
+    u=0
+    X=np.zeros((len(X0), len(t)),'float')
+    X[:,0]=X0
+    
+    for i in range( 0, len(t)-1):
+        X[:, i+1] = X[:, i] + h*f(X[:, i] + h/2*f( X[ :, i], u), u)
+        
+    return X
+
 def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY):  
     plt.figure(graphiquenumero)
     plt.plot(X, Y)
@@ -44,11 +57,14 @@ if __name__ == "__main__":
     print("taille: ", len(t),"duree: ", t[-1])
 
     #METHODE EULER
-    X_euler=methode_euler(t, X0, h)   
+    X_euler=methode_RK(t, X0, h)   
     creationgraphique(t, X_euler[1], 1, "Graphique1", "Temps", "Evolution Pendule")
     creationgraphique(t, X_euler[0], 2, "Graphique2",  "Temps", "Evolution Pendule")
+    
+    
     
     #RESULTATS
     print(t,",",X0)
 
     
+
