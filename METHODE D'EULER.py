@@ -21,6 +21,18 @@ def methode_euler(t,X0, h):
         X[:, i+1] = X[:, i] + h + f(X[:, i],u)
         
     return X
+
+#METHODE RK2 - Runge Kutta
+def methode_RK(t,X0, h):
+    #CONDITION INITIALES
+    u=0
+    X=np.zeros((len(X0), len(t)),'float')
+    X[:,0]=X0
+    
+    for i in range( 0, len(t)-1):
+        X[:, i+1] = X[:, i] + h*f(X[:, i] + h/2*f( X[ :, i], u), u)
+        
+    return X
         
         
         
