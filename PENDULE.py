@@ -40,8 +40,9 @@ def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY):
     plt.figure(graphiquenumero)
     plt.plot(X, Y)
     plt.title(titre)
-    plt.Xlabel=labelX
-    plt.Ylabel=labelY
+    plt.xlabel(labelX)
+    plt.ylabel(labelY)
+    plt.legend()
     plt.show()
         
 #MAIN
@@ -57,14 +58,17 @@ if __name__ == "__main__":
     print("taille: ", len(t),"duree: ", t[-1])
 
     #METHODE EULER
-    X_euler=methode_RK(t, X0, h)   
-    creationgraphique(t, X_euler[1], 1, "Graphique1", "Temps", "Evolution Pendule")
-    creationgraphique(t, X_euler[0], 2, "Graphique2",  "Temps", "Evolution Pendule")
+    X=methode_euler(t, X0, h)   
+    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse")
+    creationgraphique(t, X[0], 2, "Position", "Temps", "Position")
+    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse")
     
+    #METHODE RUNGE KUTTA
+    X=methode_RK(t, X0, h)   
+    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse")
+    creationgraphique(t, X[0], 2, "Position", "Temps", "Position")
+    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse")
     
     
     #RESULTATS
-    print(t,",",X0)
-
-    
-
+print(t,",",X0)
