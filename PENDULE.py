@@ -36,9 +36,9 @@ def methode_RK(t,X0, h):
         
     return X
 
-def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY):  
+def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY, nomcourbe):  
     plt.figure(graphiquenumero)
-    plt.plot(X, Y)
+    plt.plot(X, Y, label=nomcourbe)
     plt.title(titre)
     plt.xlabel(labelX)
     plt.ylabel(labelY)
@@ -59,15 +59,15 @@ if __name__ == "__main__":
 
     #METHODE EULER
     X=methode_euler(t, X0, h)   
-    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse")
-    creationgraphique(t, X[0], 2, "Position", "Temps", "Position")
-    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse")
+    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse", "EULER")
+    creationgraphique(t, X[0], 2, "Position", "Temps", "Position", "EULER")
+    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse", "EULER")
     
     #METHODE RUNGE KUTTA
     X=methode_RK(t, X0, h)   
-    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse")
-    creationgraphique(t, X[0], 2, "Position", "Temps", "Position")
-    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse")
+    creationgraphique(t, X[1], 1, "Vitesse", "Temps", "Vitesse", "RUNGE KUTTA")
+    creationgraphique(t, X[0], 2, "Position", "Temps", "Position", "RUNGE KUTTA")
+    creationgraphique(X[0], X[1], 3, "Phase", "Distance", "Vitesse", "RUNGE KUTTA")
     
     
     #RESULTATS
