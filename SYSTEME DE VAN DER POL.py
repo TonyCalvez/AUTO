@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
     #return np.array(Xdot)
 
 def f( x, u, entreetype) :
-    coeff=(x[0], x[1])
-    fonctionlinearise=np.dot(matricejacob,coeff)
-    return np.array(fonctionlinearise)
+    coeff = np.array( [x[0], x[1]])
+    fonctionlinearise = np.dot( matricejacob, coeff)
+    return np.array( fonctionlinearise)
 
 def f2( x, u, entreetype) :
     return -(x[0]**2 - 1)*x[1] - x[0]
@@ -26,26 +26,26 @@ def methode_RK(t,X0, h, entreetype):
     vitesse[0]=X0[1]
     
     for i in range( 0, len(t)-1):
-        vitesse[i+1] = f( [X[i], vitesse[i]] + h/2*f( [ X[i], vitesse[i]], u, entreetype), u, entreetype)[1]
+        vitesse[i+1] = vitesse[i] + h*f( [ X[i], vitesse[i]], u, entreetype)[1]
         
-        X[i+1] = X[i] + h*f( [ X[i], vitesse[i]] + h/2*f( [ X[ i], vitesse[i]], u, entreetype), u, entreetype)[0]
+        X[i+1] = X[i] + h*f( [ X[i], vitesse[i]], u, entreetype)[0]
         
     return X, vitesse
 
 def methode_Euler(t,X0, h, entreetype):
     #CONDITION INITIALES
     u=0
-    X=np.zeros(len(t),'float')
+    M=np.zeros(len(t),'float')
     Xdot=np.zeros(len(t),'float')
 
-    X[0] = x0_0
+    M[0] = x0_0
     Xdot[0] = x1_0
 
     
     for i in range( 0, len(t)-1):
-        Xdot[i+1] = Xdot[i] + h*f2( [X[i], Xdot[i]], u, entreetype)
-        X[i+1] = X[i] + h*( Xdot[i])
-    return X, Xdot
+        Xdot[i+1] = Xdot[i] + h*f2( [M[i], Xdot[i]], u, entreetype)
+        M[i+1] = M[i] + h*( Xdot[i])
+    return M, Xdot
 
 def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY, nomcourbe):  
     plt.figure(graphiquenumero)
@@ -54,7 +54,7 @@ def creationgraphique(X, Y, graphiquenumero, titre, labelX, labelY, nomcourbe):
     plt.xlabel(labelX)
     plt.ylabel(labelY)
     plt.legend()
-    #plt.axis( [0, 20, -500, 2500])
+
     plt.show()
 
 
@@ -75,18 +75,37 @@ if __name__ == "__main__":
     t=np.arange( 0.0, duree, h)
     print("taille: ", len(t),"duree: ", t[-1])
 
-    for i in range( 0, 10, 2 ) :         
-        #METHODE FONCTION AVEC MATRICE JACOBIENNE
-        Z=methode_RK(t, X0, h, "lineaire")   
-        creationgraphique(t, Z[1], 1, "Vitesse à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Temps", "Vitesse","1")
-        creationgraphique(t, Z[0], 2, "Position à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Temps", "Position", "2")
-        creationgraphique(Z[0], Z[1], 3, "Phase à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Distance", "Vitesse", "3")
+       
+    #METHODE FONCTION AVEC MATRICE JACOBIENNE
+    Z=methode_RK(t, X0, h, "lineaire")   
+    creationgraphique(t, Z[1], 1, "Vitesse à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Temps", "Vitesse","LINEAIRE")
+    creationgraphique(t, Z[0], 2, "Position à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Temps", "Position", "LINEAIRE")
+    creationgraphique(Z[0], Z[1], 3, "Phase à partir de la fonction linéarisée avec la méthode de RUNGE KUTTA", "Distance", "Vitesse", "LINEAIRE")
         
-        #METHODE FONCTION AVEC LA FONCTION INITIALE
-        Y=methode_Euler(t, X0, h, "dynamique") 
-        creationgraphique(t, Y[1], 1, "Vitesse à partir de la fonction dynamique avec la méthode linéarisée", "Temps", "Vitesse","1")
-        creationgraphique(t, Y[0], 2, "Position à partir de la fonction dynamique avec la méthode linéarisée", "Temps", "Position", "2")
-        creationgraphique(Y[0], Y[1], 3, "Phase à partir de la fonction dynamique avec la méthode linéarisé", "Distance", "Vitesse", "3")
+    #METHODE FONCTION AVEC LA FONCTION INITIALE
+    Y=methode_Euler(t, X0, h, "dynamique") 
+    creationgraphique(t, Y[1], 1, "Vitesse à partir de la fonction dynamique avec la méthode linéarisée", "Temps", "Vitesse","DYNAMIQUE")
+    creationgraphique(t, Y[0], 2, "Position à partir de la fonction dynamique avec la méthode linéarisée", "Temps", "Position","DYNAMIQUE")
+    creationgraphique(Y[0], Y[1], 3, "Phase à partir de la fonction dynamique avec la méthode linéarisé", "Distance", "Vitesse","DYNAMIQUE")
     
     #RESULTATS
 print(t,",",X0)
+
+
+##MAIN
+#if __name__ == "__main__":
+#    #valeurspropres = np.eigh(systemelinearise)
+#    #print valeurspropres
+#    # Conditions initiales
+#    x0_0 = 0.1vitesse
+#    x1_0 = 0
+#    x = np.arange(0, 10, 1)
+#    X1dot = np.arange(0, 10, 1)
+#    X2dot = np.arange(0, 10, 1)
+#    for i in range(0, len(x) - 1) :
+#        X1dot[i] = fonction([x[i], X1dot[i-1]])[0]
+#        X2dot[i] = fonction([x[i], X1dot[i-1]])[1]
+#    
+#    plt.figure()
+#    plt.plot( x, X2dot)
+#    plt.show()
