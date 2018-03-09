@@ -100,11 +100,5 @@ if __name__ == "__main__":
         delta[i+1] = u[1]
     
         car.draw(vecteur, d, track)   # Pour dessiner la petite voiture et le polygone
-
+        pl.plot(Xc, Yc)
         pl.show()
-    
-    #pl.figure()
-    #pl.plot( t, Yc)
-    #pl.show()
-    
-    # TODO
