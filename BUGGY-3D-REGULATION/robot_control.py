@@ -170,51 +170,6 @@ class RobotControl:
 
             else:
                 self.rb.set_speed(nominalSpeed, nominalSpeed)
-        # while distFront > 0.5 or distFront == 0:
-        #     t0 = time.time()
-        #
-        #     print(distFront)
-        #
-        #     if wall == "left" or wall == "right":
-        #         distcomputelateral = self.rb.get_sonar(wall)
-        #     else:
-        #         distcomputelateral = 0
-        #
-        #     if True:
-        #         distWall = flt.iir_filter(flt.median_filter(self.rb.get_sonar(distcomputelateral)))
-        #         ControlError = setPoint - distWall
-        #
-        #         if derivOk:
-        #             derivError = ControlError - lastError
-        #             deltaSpeed = kp * ControlError + kd * derivError
-        #         else:
-        #             deltaSpeed = kp * ControlError
-        #
-        #         if deltaSpeed > deltaSpeedMax:
-        #             deltaSpeed = deltaSpeedMax
-        #
-        #         if deltaSpeed < - deltaSpeedMax:
-        #             deltaSpeed = - deltaSpeedMax
-        #
-        #         if wall == "right":
-        #             self.rb.set_speed(nominalSpeed - deltaSpeed, nominalSpeed + deltaSpeed)
-        #             print("Le robot va a gauche")
-        #
-        #         elif wall == "left":
-        #             self.rb.set_speed(nominalSpeed + deltaSpeed, nominalSpeed - deltaSpeed)
-        #             print("Le robot va a gauche")
-        #
-        #         lastError = ControlError
-        #         derivOk = True
-        #
-        #     else:
-        #         self.rb.set_speed(nominalSpeed, nominalSpeed)
-        #
-        #     distFront = fltFront.iir_filter(fltFront.median_filter(self.rb.get_sonar("front")))
-        #
-        #     t1 = time.time()
-        #     dt = np.abs(self.loopIterTime - (t1 - t0))
-        #     time.sleep(dt)
         self.rb.stop()
 
     def bias(self, distTheorique, direction):
