@@ -18,14 +18,12 @@ class SonarFilter():
         self.Bias = 0
         self.etat_transitoire = True
 
-    # reset filter when sonar detects nothing
     def reset_ma(self):
         self.ma_memory = np.zeros(self.ma_M)
         self.ma_cnt = 0
 
     def reset_iir(self):
         self.iir_last_value = 0.0
-        etat_transitoire = False
 
     # set filter parameters
     def set_ma_order(self, N):
@@ -38,6 +36,9 @@ class SonarFilter():
         self.iir_a = a
         self.iir_b = 1.0 - self.iir_a
         self.iir_last_value = 0.0
+
+    def set_bias(self, biascompute):
+        self.Bias = biascompute
 
     # implement at least one of the two filters
     def ma_filter(self, v):
@@ -74,6 +75,6 @@ class SonarFilter():
         L.sort()
         vf = L[len(L) // 2]
         if vf == 0:
-            return (v)
+            return v
         else:
             return vf

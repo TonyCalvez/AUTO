@@ -11,8 +11,8 @@ class RobotControl:
         self.distBetweenWheels = 0.12
         self.nTicksPerRevol = 720
         self.wheelDiameter = 0.06
-        self.biasValueFront = self.bias(1, "front")
-        self.biasValueRight = self.bias(0.5, "right")
+        self.biasValueFront = self.bias(0.87, "front")
+        self.biasValueRight = 0
         self.loopIterTime = 0.050
 
     def testMove(self, rb: object, speedLeft: object, speedRight: object, duration: object) -> object:
@@ -56,7 +56,7 @@ class RobotControl:
             else:
                 self.testMove(rb, -40, 40, rotationTime)
 
-    def inPlaceTurnRight(self, ang=90, speed=15):
+    def inPlaceTurnRight(self, ang=90, speed=5):
         n = 1440 / 360
         impulsions = n * ang
         offsetLeft, offsetRight = self.rb.get_odometers()
@@ -72,7 +72,7 @@ class RobotControl:
             time.sleep(dt)
         self.rb.stop()
 
-    def inPlaceTurnLeft(self, ang=90, speed=15):  # ang in degrees
+    def inPlaceTurnLeft(self, ang=90, speed=5):  # ang in degrees
         n = 1440 / 360
         impulsions = n * ang
         offsetLeft, offsetRight = self.rb.get_odometers()
@@ -98,64 +98,94 @@ class RobotControl:
         distFront = self.rb.get_sonar("front") + self.biasValueFront
 
         self.rb.set_speed(speed, speed)
-        while x < impulsions or (distFront > 0.5 or distFront == 0):
+
+        fltFront = sonar_filter.SonarFilter()
+        fltFront.set_iir_a(0.7)
+        fltFront.reset_iir()
+        fltFront.set_bias(self.biasValueFront)
+
+        while x < impulsions or (distFront > 0.45 or distFront == 0):
             t0 = time.time()
             odoRight, odoLeft = self.rb.get_odometers()
             x = odoLeft - offsetLeft
-
-            distFront = self.rb.get_sonar("front") + self.biasValueFront
+            distFrontCompute = self.rb.get_sonar("front")
+            if distFrontCompute != 0:
+                distFront = fltFront.median_filter(distFrontCompute)
+                distFront = fltFront.iir_filter(distFront)
 
             t1 = time.time()
             dt = np.abs(self.loopIterTime - (t1 - t0))
             time.sleep(dt)
         self.rb.stop()
 
-    def wallFollower(self, setPoint=0.5, nominalSpeed=50):
+    def wallFollower(self, dist=0, wall="null", setPoint=0.5, nominalSpeed=100, timer=0):
 
         # INIT FILTER
         fltFront = sonar_filter.SonarFilter()
         fltFront.set_iir_a(0.7)
         fltFront.reset_iir()
+        fltFront.set_bias(self.biasValueFront)
         flt = sonar_filter.SonarFilter()
         flt.set_iir_a(0.7)
         flt.reset_iir()
+        flt.set_bias(self.biasValueRight)
         # END FILTER
 
         # COEFF
         kp = 10
         kd = 1000
 
-        deltaSpeedMax = 20
-        derivOk = False
-        lastError = 0
+        # INIT ODOMETER
+        perim_roue = 0.1885 * 2
+        dist = (dist) / perim_roue
+        impulsions = dist * 1440
+        offsetRight, offsetLeft = self.rb.get_odometers()
+        impulsionscal = 0
 
+        # INIT SONAR
         distFront = self.rb.get_sonar("front")
         distRight = self.rb.get_sonar("right")
         distLeft = self.rb.get_sonar("left")
 
-        if distRight < 1.5 and distRight != 0:
-            wall = "right"
-        elif distLeft < 1.5 and distLeft != 0:
-            wall = "left"
-        else:
-            wall = "null"
+        # INIT BOUCLE
+        deltaSpeedMax = 20
+        derivOk = False
+        lastError = 0
 
-        print("mur choisi par le robot:" + wall)
+        if wall == "null":
+            if distRight < 1.5 and distRight != 0:
+                wall = "right"
+            elif distLeft < 1.5 and distLeft != 0:
+                wall = "left"
+            else:
+                wall = "null"
 
-        while distFront > 0.5 or distFront == 0:
-            distFront = self.rb.get_sonar("front")
+        print("MUR:" + wall)
 
-            distWall_raw = self.rb.get_sonar(wall)
-            distWall = flt.median_filter(distWall_raw)
+        while distFront > 0.45 or distFront == 0 or impulsionscal < impulsions:
+            distFrontCompute = self.rb.get_sonar("front")
+            if distFrontCompute !=0:
+                distFront = fltFront.median_filter(distFrontCompute)
+                distFront = fltFront.iir_filter(distFront)
+
+            odoRight, odoLeft = self.rb.get_odometers()
+            if dist == 0:
+                impulsionscal = 0
+            else:
+                impulsionscal = odoLeft - offsetLeft
+
+            distWallCompute = self.rb.get_sonar(wall)
+            distWall = flt.median_filter(distWallCompute)
             distWall = flt.iir_filter(distWall)
             ControlError = setPoint - distWall
-            if distWall_raw !=0:
+
+            if distWallCompute !=0:
                 if derivOk:
                     derivError = ControlError - lastError
                     deltaSpeed = kp * ControlError + kd * derivError
                 else:
                     deltaSpeed = kp * ControlError
-                # print("deltaSpeed = {0}".format(deltaSpeed))
+
                 if deltaSpeed > deltaSpeedMax:
                     deltaSpeed = deltaSpeedMax
                 if deltaSpeed < - deltaSpeedMax:
@@ -169,18 +199,69 @@ class RobotControl:
                 derivOk = True
 
             else:
-                self.rb.set_speed(nominalSpeed, nominalSpeed)
+                self.rb.stop()
+                break
+        # while distFront > 0.5 or distFront == 0:
+        #     t0 = time.time()
+        #
+        #     print(distFront)
+        #
+        #     if wall == "left" or wall == "right":
+        #         distcomputelateral = self.rb.get_sonar(wall)
+        #     else:
+        #         distcomputelateral = 0
+        #
+        #     if True:
+        #         distWall = flt.iir_filter(flt.median_filter(self.rb.get_sonar(distcomputelateral)))
+        #         ControlError = setPoint - distWall
+        #
+        #         if derivOk:
+        #             derivError = ControlError - lastError
+        #             deltaSpeed = kp * ControlError + kd * derivError
+        #         else:
+        #             deltaSpeed = kp * ControlError
+        #
+        #         if deltaSpeed > deltaSpeedMax:
+        #             deltaSpeed = deltaSpeedMax
+        #
+        #         if deltaSpeed < - deltaSpeedMax:
+        #             deltaSpeed = - deltaSpeedMax
+        #
+        #         if wall == "right":
+        #             self.rb.set_speed(nominalSpeed - deltaSpeed, nominalSpeed + deltaSpeed)
+        #             print("Le robot va a gauche")
+        #
+        #         elif wall == "left":
+        #             self.rb.set_speed(nominalSpeed + deltaSpeed, nominalSpeed - deltaSpeed)
+        #             print("Le robot va a gauche")
+        #
+        #         lastError = ControlError
+        #         derivOk = True
+        #
+        #     else:
+        #         self.rb.set_speed(nominalSpeed, nominalSpeed)
+        #
+        #     distFront = fltFront.iir_filter(fltFront.median_filter(self.rb.get_sonar("front")))
+        #
+        #     t1 = time.time()
+        #     dt = np.abs(self.loopIterTime - (t1 - t0))
+        #     time.sleep(dt)
         self.rb.stop()
 
-    def bias(self, distTheorique, direction):
-        n = 10
+    def bias(self, distTheorique, direction, n=50):
         ts = np.zeros(n)
         loop_time = 0.100  # 100 ms (or 10 Hz)
         distfront = 0
+        flt = sonar_filter.SonarFilter()
+        flt.set_iir_a(0.7)
+        flt.reset_iir()
+        flt.set_bias(0)
         for i in range(n):
             t0 = time.time()
-            distFront = self.rb.get_sonar(direction)
-            ts[i] = distFront
+            distWallCompute = self.rb.get_sonar(direction)
+            distWall = flt.median_filter(distWallCompute)
+            distWall = flt.iir_filter(distWall)
+            ts[i] = distWall
             t1 = time.time()
             dt = loop_time - (t1 - t0)
             if dt > 0:
@@ -188,8 +269,8 @@ class RobotControl:
             else:
                 print("overtime !!")
         self.rb.stop()
-        bias = distTheorique - np.median(ts)
-        return bias
+        bias = distTheorique - distWall
+        return -bias
 
     def stopItNow(self):
         self.rb.set_speed(0, 0)
