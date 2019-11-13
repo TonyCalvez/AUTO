@@ -22,6 +22,7 @@ cruise_carpar
 % USE ODE45 FUNCTION FOR CRUISE_CLSYSODE.M 
 % BETWEEN 0-70 WITH INITIAL CONDITIONS [v_e u_e]
 [t, x] = ode45(@(t,x) cruise_clsysode(t, x, param), [0 70], [v_e u_e]);
+vd = vref * ones(length(t));
 
 
 %% Plot the results
