@@ -1,4 +1,6 @@
 % https://fr.mathworks.com/help/robust/gs/active-suspension-control-design.html?searchHighlight=actnom&s_tid=doc_srchtitle
+clear; close all;
+
 mb = 300;    % kg
 mw = 60;     % kg
 bs = 1000;   % N/m/s
@@ -37,5 +39,67 @@ Act.OutputName = 'fs';
 rng('default')
 bode(Act,'b',Act.NominalValue,'r+',logspace(-1,3,120))
 
+Wroad = ss(0.07);  Wroad.u = 'd1';   Wroad.y = 'r';
+Wact = 0.8*tf([1 50],[1 500]);  Wact.u = 'u';  Wact.y = 'e1';
+Wd2 = ss(0.01);  Wd2.u = 'd2';   Wd2.y = 'Wd2';
+Wd3 = ss(0.5);   Wd3.u = 'd3';   Wd3.y = 'Wd3';
 
+HandlingTarget = 0.04 * tf([1/8 1],[1/80 1]);
+ComfortTarget = 0.4 * tf([1/0.45 1],[1/150 1]);
 
+Targets = [HandlingTarget ; ComfortTarget];
+bodemag(qcar({'sd','ab'},'r')*Wroad,'b',Targets,'r--',{1,1000}), grid
+title('Response to road disturbance')
+legend('Open-loop','Closed-loop target')
+
+beta = reshape([0.01 0.5 0.99],[1 1 3]);
+Wsd = beta / HandlingTarget;
+Wsd.u = 'sd';  Wsd.y = 'e3';
+Wab = (1-beta) / ComfortTarget;
+Wab.u = 'ab';  Wab.y = 'e2';
+
+sdmeas  = sumblk('y1 = sd+Wd2');
+abmeas = sumblk('y2 = ab+Wd3');
+ICinputs = {'d1';'d2';'d3';'u'};
+ICoutputs = {'e1';'e2';'e3';'y1';'y2'};
+qcaric = connect(qcar(2:3,:),Act,Wroad,Wact,Wab,Wsd,Wd2,Wd3,...
+                 sdmeas,abmeas,ICinputs,ICoutputs)
+ncont = 1; % one control signal, u
+nmeas = 2; % two measurement signals, sd and ab
+K = ss(zeros(ncont,nmeas,3));
+gamma = zeros(3,1);
+for i=1:3
+   [K(:,:,i),~,gamma(i)] = hinfsyn(qcaric(:,:,i),nmeas,ncont);
+end
+
+gamma
+
+K.u = {'sd','ab'};  K.y = 'u';
+CL = connect(qcar,Act.Nominal,K,'r',{'xb';'sd';'ab'});
+
+bodemag(qcar(:,'r'),'b', CL(:,:,1),'r-.', ...
+   CL(:,:,2),'m-.', CL(:,:,3),'k-.',{1,140}), grid
+legend('Open-loop','Comfort','Balanced','Handling','location','SouthEast')
+title('Body travel, suspension deflection, and body acceleration due to road')
+
+% Road disturbance
+t = 0:0.0025:1;
+roaddist = zeros(size(t));
+roaddist(1:101) = 0.025*(1-cos(8*pi*t(1:101)));
+
+% Closed-loop model
+SIMK = connect(qcar,Act.Nominal,K,'r',{'xb';'sd';'ab';'fs'});
+
+% Simulate
+p1 = lsim(qcar(:,1),roaddist,t);
+y1 = lsim(SIMK(1:4,1,1),roaddist,t);
+y2 = lsim(SIMK(1:4,1,2),roaddist,t);
+y3 = lsim(SIMK(1:4,1,3),roaddist,t);
+
+% Plot results
+subplot(211)
+plot(t,p1(:,1),'b',t,y1(:,1),'r.',t,y2(:,1),'m.',t,y3(:,1),'k.',t,roaddist,'g')
+title('Body travel'), ylabel('x_b (m)')
+subplot(212)
+plot(t,p1(:,3),'b',t,y1(:,3),'r.',t,y2(:,3),'m.',t,y3(:,3),'k.',t,roaddist,'g')
+title('Body acceleration'), ylabel('a_b (m/s^2)')
